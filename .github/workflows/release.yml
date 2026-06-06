@@ -1,0 +1,85 @@
+# GitHub Actions — PrettifyText Release Workflow
+# Triggers on every push to main.
+# Reads version from the VERSION file and creates a GitHub release.
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write   # Needed to create releases and tags
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the repository with full history (needed for tags)
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Read the version from VERSION file
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=V${VERSION}"   >> $GITHUB_OUTPUT
+
+      # 3. Check whether this version tag already exists
+      #    If it does, skip creating a release (idempotent pushes).
+      - name: Check existing tag
+        id: tag_check
+        run: |
+          if git rev-parse "refs/tags/${{ steps.version.outputs.tag }}" &>/dev/null; then
+            echo "exists=true"  >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 4. Validate PHP syntax on all .php files
+      - name: Lint PHP
+        if: steps.tag_check.outputs.exists == 'false'
+        run: |
+          sudo apt-get install -y php-cli > /dev/null 2>&1
+          find . -name "*.php" | xargs -I{} php -l {}
+
+      # 5. Bundle a release ZIP (excludes dev/git files)
+      - name: Create release archive
+        if: steps.tag_check.outputs.exists == 'false'
+        run: |
+          zip -r "prettifytext-${{ steps.version.outputs.tag }}.zip" . \
+            --exclude "*.git*" \
+            --exclude ".github/*" \
+            --exclude ".claude/*" \
+            --exclude "SDD.md" \
+            --exclude "CLAUDE.md"
+
+      # 6. Extract changelog entry for this version (between first two ## headers)
+      - name: Extract changelog
+        if: steps.tag_check.outputs.exists == 'false'
+        id: changelog
+        run: |
+          NOTES=$(awk '/^## \[/{if(found) exit; found=1; next} found{print}' CHANGELOG.md | head -40)
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES"     >> $GITHUB_OUTPUT
+          echo "EOF"        >> $GITHUB_OUTPUT
+
+      # 7. Create the GitHub release and upload the ZIP
+      - name: Create GitHub Release
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name:   ${{ steps.version.outputs.tag }}
+          name:       PrettifyText ${{ steps.version.outputs.tag }}
+          body:       ${{ steps.changelog.outputs.notes }}
+          files:      prettifytext-${{ steps.version.outputs.tag }}.zip
+          draft:      false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

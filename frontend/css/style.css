@@ -1,0 +1,552 @@
+/* ============================================================
+   PrettifyText — style.css
+   Full theme system (dark/light), responsive layout, animations.
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   1. CSS VARIABLES — theme tokens
+   ---------------------------------------------------------- */
+:root {
+    --primary:        #6366f1;
+    --primary-hover:  #4f46e5;
+    --primary-light:  #818cf8;
+    --success:        #10b981;
+    --error:          #ef4444;
+    --warning:        #f59e0b;
+
+    /* Dark theme (default) */
+    --bg-primary:     #0f172a;
+    --bg-secondary:   #1e293b;
+    --bg-tertiary:    #2d3748;
+    --surface:        #1e293b;
+    --surface-hover:  #2d3f55;
+    --border:         #334155;
+    --text-primary:   #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted:     #64748b;
+    --shadow:         rgba(0,0,0,.5);
+}
+
+[data-theme="light"] {
+    --bg-primary:     #f8fafc;
+    --bg-secondary:   #ffffff;
+    --bg-tertiary:    #f1f5f9;
+    --surface:        #ffffff;
+    --surface-hover:  #f1f5f9;
+    --border:         #e2e8f0;
+    --text-primary:   #0f172a;
+    --text-secondary: #475569;
+    --text-muted:     #94a3b8;
+    --shadow:         rgba(0,0,0,.08);
+}
+
+/* ----------------------------------------------------------
+   2. RESET & BASE
+   ---------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background .25s, color .25s;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* ----------------------------------------------------------
+   3. HEADER
+   ---------------------------------------------------------- */
+.app-header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 1px 12px var(--shadow);
+}
+
+/* Logo: gradient text */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: 1.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    user-select: none;
+}
+.logo-icon { -webkit-text-fill-color: var(--primary); }
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+
+/* ----------------------------------------------------------
+   4. HERO BANNER
+   ---------------------------------------------------------- */
+.hero {
+    padding: 2rem 1.5rem 1.75rem;
+    text-align: center;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="light"] .hero {
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #eef2ff 100%);
+}
+
+/* subtle dot grid overlay */
+.hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(99,102,241,.15) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+}
+
+.hero-content { position: relative; z-index: 1; }
+
+.hero h1 {
+    font-size: 2.25rem;
+    font-weight: 900;
+    letter-spacing: -.02em;
+    background: linear-gradient(135deg, #c7d2fe, #a5b4fc, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: .4rem;
+}
+
+[data-theme="light"] .hero h1 {
+    background: linear-gradient(135deg, #3730a3, #4f46e5, #6366f1);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.hero p {
+    color: #a5b4fc;
+    font-size: 1rem;
+    margin-bottom: .9rem;
+}
+[data-theme="light"] .hero p { color: #4338ca; }
+
+/* Format pill badges */
+.format-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: .4rem; }
+
+.badge {
+    background: rgba(99,102,241,.18);
+    border: 1px solid rgba(99,102,241,.3);
+    color: #a5b4fc;
+    padding: .15rem .55rem;
+    border-radius: 99px;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+}
+[data-theme="light"] .badge { background: rgba(99,102,241,.1); color: #4338ca; }
+
+/* ----------------------------------------------------------
+   5. EDITOR WRAPPER
+   ---------------------------------------------------------- */
+.editor-wrapper {
+    flex: 1;
+    padding: 1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    max-width: 1700px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Top toolbar row */
+.global-toolbar {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+.toolbar-left { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+
+/* Three-column grid: input | actions | output */
+.editor-grid {
+    display: grid;
+    grid-template-columns: 1fr 110px 1fr;
+    gap: 1rem;
+    flex: 1;
+    min-height: 480px;
+}
+
+/* ----------------------------------------------------------
+   6. PANELS (shared by input & output)
+   ---------------------------------------------------------- */
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 2px 16px var(--shadow);
+    transition: box-shadow .2s;
+}
+.panel:focus-within { box-shadow: 0 0 0 2px var(--primary), 0 4px 24px var(--shadow); }
+
+.panel-header {
+    padding: .55rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+
+.panel-title {
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.panel-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.panel-footer {
+    padding: .35rem 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: .72rem;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+
+/* ----------------------------------------------------------
+   7. INPUT TEXTAREA
+   ---------------------------------------------------------- */
+#input-text {
+    flex: 1;
+    width: 100%;
+    min-height: 440px;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: .85rem 1rem;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+    font-size: .82rem;
+    line-height: 1.65;
+    tab-size: 2;
+    caret-color: var(--primary);
+}
+#input-text::placeholder { color: var(--text-muted); font-style: italic; }
+
+/* ----------------------------------------------------------
+   8. OUTPUT / HIGHLIGHT DISPLAY
+   ---------------------------------------------------------- */
+.output-scroll {
+    flex: 1;
+    overflow: auto;
+    min-height: 440px;
+}
+.output-scroll pre {
+    margin: 0;
+    min-height: 100%;
+}
+.output-scroll pre code {
+    display: block;
+    padding: .85rem 1rem;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: .82rem;
+    line-height: 1.65;
+    white-space: pre;
+    background: transparent !important;
+}
+
+/* Override hljs background so our panel bg shows */
+.hljs { background: transparent !important; }
+
+/* ----------------------------------------------------------
+   9. ACTIONS COLUMN (center between panels)
+   ---------------------------------------------------------- */
+.actions-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    gap: .6rem;
+    padding: .5rem 0;
+}
+
+/* ----------------------------------------------------------
+   10. BUTTONS
+   ---------------------------------------------------------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    padding: .5rem .9rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .18s;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* Primary action (Prettify) */
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+.btn-primary:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(99,102,241,.45);
+}
+.btn-primary:active { transform: translateY(0); }
+
+/* Secondary actions */
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-color: var(--border);
+}
+.btn-secondary:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+    border-color: var(--primary);
+}
+
+/* Small icon buttons (header/panel) */
+.btn-icon {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: .35rem .65rem;
+    border-radius: 8px;
+    font-size: .8rem;
+    cursor: pointer;
+    transition: all .18s;
+    white-space: nowrap;
+}
+.btn-icon:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+/* Beer / donate button */
+.btn-beer {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .45rem 1.1rem;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    border-radius: 99px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: .82rem;
+    transition: all .2s;
+    box-shadow: 0 2px 10px rgba(245,158,11,.35);
+    border: none;
+    cursor: pointer;
+}
+.btn-beer:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 18px rgba(245,158,11,.5);
+}
+
+/* ----------------------------------------------------------
+   11. SELECT (native dropdowns)
+   ---------------------------------------------------------- */
+select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: .38rem .7rem;
+    font-size: .8rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .18s;
+}
+select:hover, select:focus { border-color: var(--primary); }
+select optgroup { color: var(--text-muted); font-size: .72rem; }
+
+/* ----------------------------------------------------------
+   12. STATUS BAR
+   ---------------------------------------------------------- */
+.status-bar {
+    flex: 1;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    padding: 0 .75rem;
+    font-size: .78rem;
+    border-radius: 8px;
+    transition: all .3s;
+    color: transparent; /* hidden when empty */
+    overflow: hidden;
+    white-space: nowrap;
+}
+.status-bar.success {
+    background: rgba(16,185,129,.12);
+    color: var(--success);
+    border: 1px solid rgba(16,185,129,.3);
+}
+.status-bar.error {
+    background: rgba(239,68,68,.12);
+    color: var(--error);
+    border: 1px solid rgba(239,68,68,.3);
+}
+.status-bar.info {
+    background: rgba(99,102,241,.1);
+    color: var(--primary-light);
+    border: 1px solid rgba(99,102,241,.25);
+}
+
+/* ----------------------------------------------------------
+   13. FORMAT DETECTED BADGE (output panel header)
+   ---------------------------------------------------------- */
+.format-badge {
+    background: rgba(99,102,241,.18);
+    color: var(--primary-light);
+    border: 1px solid rgba(99,102,241,.3);
+    padding: .1rem .5rem;
+    border-radius: 4px;
+    font-size: .65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    display: none; /* shown via JS when format is detected */
+}
+.format-badge:not(:empty) { display: inline-block; }
+
+/* ----------------------------------------------------------
+   14. ABOUT MODAL
+   ---------------------------------------------------------- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    backdrop-filter: blur(6px);
+    animation: fadeIn .2s ease;
+}
+.modal-overlay.hidden { display: none; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.modal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 25px 60px rgba(0,0,0,.6);
+    animation: slideUp .25s ease;
+}
+.modal-logo {
+    font-size: 3.5rem;
+    color: var(--primary-light);
+    margin-bottom: .75rem;
+    display: block;
+}
+.modal-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: .2rem;
+}
+.modal-version { color: var(--text-muted); font-size: .82rem; margin-bottom: 1.25rem; }
+.modal-creator { color: var(--text-secondary); margin-bottom: .3rem; font-weight: 600; }
+.modal-rights  { color: var(--text-muted); font-size: .78rem; margin-bottom: 1.5rem; }
+
+/* ----------------------------------------------------------
+   15. FOOTER
+   ---------------------------------------------------------- */
+.app-footer {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    padding: .85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+.footer-info { font-size: .75rem; color: var(--text-muted); }
+
+/* ----------------------------------------------------------
+   16. CUSTOM SCROLLBAR
+   ---------------------------------------------------------- */
+::-webkit-scrollbar          { width: 6px; height: 6px; }
+::-webkit-scrollbar-track    { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb    { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ----------------------------------------------------------
+   17. RESPONSIVE — tablets & phones
+   ---------------------------------------------------------- */
+@media (max-width: 920px) {
+    .editor-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+    }
+    .actions-column {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 0;
+    }
+    .actions-column .btn { width: auto; flex: 1; min-width: 90px; }
+    #input-text, .output-scroll { min-height: 260px; }
+    .hero h1 { font-size: 1.6rem; }
+}
+
+@media (max-width: 480px) {
+    .app-header { padding: 0 .75rem; }
+    .editor-wrapper { padding: .75rem; }
+    .hero { padding: 1.25rem .75rem; }
+    .hero h1 { font-size: 1.35rem; }
+    .format-badges { gap: .25rem; }
+    .app-footer { flex-direction: column; align-items: flex-start; }
+}
