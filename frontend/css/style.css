@@ -228,7 +228,8 @@ body {
     letter-spacing: .08em;
 }
 
-.panel-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+/* min-width:0 stops a wide descendant from expanding the grid cell */
+.panel-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
 .panel-footer {
     padding: .35rem 1rem;
@@ -250,8 +251,8 @@ body {
 .editor-area {
     display: flex;
     flex: 1;
-    overflow: hidden;   /* scroll is managed by children individually */
-    min-height: 440px;
+    overflow: hidden;
+    min-height: 0;   /* height comes from children (#input-text / .output-scroll) */
 }
 
 /* ----------------------------------------------------------
@@ -294,6 +295,7 @@ body {
 #input-text {
     flex: 1;
     width: 100%;
+    min-height: 440px;   /* panel height anchor */
     background: transparent;
     border: none;
     outline: none;
@@ -305,7 +307,8 @@ body {
     line-height: 1.65;
     tab-size: 2;
     caret-color: var(--primary);
-    overflow-y: auto;   /* textarea handles its own scroll; gutter syncs to it */
+    overflow-y: scroll;  /* always-visible vertical scrollbar */
+    overflow-x: auto;
 }
 #input-text::placeholder { color: var(--text-muted); font-style: italic; }
 
@@ -314,17 +317,22 @@ body {
    ---------------------------------------------------------- */
 .output-scroll {
     flex: 1;
-    overflow: auto;
+    overflow: scroll;   /* always-visible scrollbars on both axes */
+    min-width: 0;       /* prevent this flex item from expanding the grid */
+    min-height: 440px;
 }
-/* editor-area inside output-scroll fills the scrollable area */
+/* editor-area inside output fills the scroll container.
+   min-width: max-content makes long code lines create h-scroll on .output-scroll.
+   Works safely because .output-scroll already has overflow:scroll (clips to .panel). */
 .output-scroll .editor-area {
-    min-width: max-content;  /* let long lines scroll horizontally */
+    min-width: max-content;
     min-height: 100%;
+    overflow: visible;
 }
-/* output gutter scrolls with the container, not independently */
+/* Gutter stays pinned to the left edge when code scrolls horizontally */
 .output-scroll .line-numbers {
     position: sticky;
-    left: 0;            /* gutter stays visible on horizontal scroll */
+    left: 0;
     z-index: 1;
 }
 .output-scroll pre {

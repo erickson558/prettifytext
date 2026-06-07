@@ -6,6 +6,26 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.2] — 2026-06-06
+
+### Fixed
+- Center action buttons (Prettify / Minify / Swap / Clear) no longer disappear.
+  Root cause: `min-width: max-content` on the output editor-area was expanding the
+  CSS Grid beyond available space. Fixed with `min-width: 0` on `.panel-body` and
+  `.output-scroll` to contain flex expansion within the grid cell.
+- PC no longer freezes when pasting large files:
+  - Line-number gutter updates are now **debounced** (120 ms) — rapid typing/paste
+    no longer triggers a rebuild on every character.
+  - Files > 3 000 lines use a fast plain-text render instead of per-span DOM nodes.
+  - Files > 50 000 lines show a "50 000+" indicator — no attempt to render 50 k spans.
+  - Files > 2 MB skip the line-split scan entirely to avoid O(n) string operations.
+  - Paste handler defers gutter rebuild to `requestAnimationFrame` so the browser
+    finishes inserting text before scanning it.
+- Both panels now show **always-visible scrollbars** (`overflow: scroll`) — users
+  can scroll back after pasting long text without hunting for a scrollbar handle.
+
+---
+
 ## [1.0.1] — 2026-06-06
 
 ### Added

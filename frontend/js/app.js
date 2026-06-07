@@ -377,58 +377,100 @@ function minify() {
    7. LINE NUMBERS GUTTER  (Notepad++ style)
    ---------------------------------------------------------- */
 
-// Minimum gutter width based on digit count, keeping numbers readable
-function gutterWidth(lineCount) {
-    const digits = String(lineCount).length;
-    return Math.max(46, digits * 9 + 28);  // 46 px floor, ~9px per extra digit
+// Above this threshold we skip per-span rendering to avoid freezing the browser.
+// Spans are rich (support active-line CSS) but building 5 000+ of them is slow.
+const GUTTER_FAST_THRESHOLD = 3000;
+
+// Lines above this are simply not counted — avoids splitting a 500 000-char string.
+const GUTTER_LINE_CAP = 50000;
+
+// Debounce: return a version of fn that only runs after `delay` ms of silence.
+function debounce(fn, delay) {
+    let timer;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
 }
 
-// Rebuild the gutter spans for the input textarea.
-// Called on every keystroke — kept fast by operating on a string, not the DOM per-line.
+// Gutter pixel width derived from digit count (widens automatically).
+function gutterWidth(lineCount) {
+    const digits = String(Math.min(lineCount, GUTTER_LINE_CAP)).length;
+    return Math.max(46, digits * 9 + 28);
+}
+
+// Build gutter content.
+// ≤ GUTTER_FAST_THRESHOLD : individual <span> elements (active-line highlight works)
+// > GUTTER_FAST_THRESHOLD : single textContent string — 10× faster, no freeze
+// > GUTTER_LINE_CAP        : just show "50 000+" so we never split a huge string
+function renderGutter(gutter, lineCount) {
+    gutter.style.width = gutterWidth(lineCount) + 'px';
+
+    if (lineCount > GUTTER_LINE_CAP) {
+        // Don't try to render 50 000+ individual numbers
+        gutter.style.whiteSpace = 'normal';
+        gutter.innerHTML = `<span style="font-size:.7em;opacity:.6">${GUTTER_LINE_CAP.toLocaleString()}+</span>`;
+        return;
+    }
+
+    if (lineCount > GUTTER_FAST_THRESHOLD) {
+        // Fast path: plain text with CSS pre-line wrapping — no DOM nodes per line
+        gutter.style.whiteSpace = 'pre';
+        gutter.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
+        return;
+    }
+
+    // Rich path: one <span> per line so CSS can target .active
+    gutter.style.whiteSpace = 'normal';
+    let html = '';
+    for (let i = 1; i <= lineCount; i++) html += `<span>${i}</span>`;
+    gutter.innerHTML = html;
+}
+
+// Count lines safely — avoid splitting huge strings unnecessarily.
+function countLines(text) {
+    if (!text) return 1;
+    if (text.length > 2_000_000) return GUTTER_LINE_CAP + 1; // cap early
+    return text.split('\n').length;
+}
+
+// Rebuild the input gutter — debounced to avoid freezing on rapid paste / typing.
 function updateInputLineNumbers() {
-    const ta    = document.getElementById('input-text');
+    const ta     = document.getElementById('input-text');
     const gutter = document.getElementById('input-line-numbers');
     if (!gutter) return;
 
-    const lines = ta.value.split('\n').length;
-    let html = '';
-    for (let i = 1; i <= lines; i++) html += `<span>${i}</span>`;
-    gutter.innerHTML = html;
+    const lines = countLines(ta.value);
+    renderGutter(gutter, lines);
 
-    // Widen gutter when line count crosses a digit boundary
-    gutter.style.width = gutterWidth(lines) + 'px';
-
-    // Highlight the line where the cursor sits
-    highlightActiveLine(ta, gutter);
+    // Active-line highlight only works in rich (span) mode
+    if (lines <= GUTTER_FAST_THRESHOLD) highlightActiveLine(ta, gutter);
 }
 
-// Sync gutter scroll position to textarea scroll — called on textarea 'scroll'
+// Debounced version used on 'input' events (typing / pasting)
+const updateInputLineNumbersDebounced = debounce(updateInputLineNumbers, 120);
+
+// Sync gutter scroll position to textarea scroll
 function syncInputGutterScroll() {
     const ta     = document.getElementById('input-text');
     const gutter = document.getElementById('input-line-numbers');
     if (gutter) gutter.scrollTop = ta.scrollTop;
 }
 
-// Mark the gutter span for the line under the cursor
+// Mark the active-line span (only in rich span mode)
 function highlightActiveLine(ta, gutter) {
     const activeLine = ta.value.substring(0, ta.selectionStart).split('\n').length;
-    const spans = gutter.querySelectorAll('span');
-    spans.forEach((s, i) => {
+    gutter.querySelectorAll('span').forEach((s, i) => {
         s.classList.toggle('active', i + 1 === activeLine);
     });
 }
 
-// Rebuild the output gutter after each format operation.
-// The output is a <pre><code> block — line count comes from the text content.
+// Rebuild the output gutter after a format operation.
 function updateOutputLineNumbers(text) {
     const gutter = document.getElementById('output-line-numbers');
     if (!gutter) return;
-
-    const lines = text ? text.split('\n').length : 1;
-    let html = '';
-    for (let i = 1; i <= lines; i++) html += `<span>${i}</span>`;
-    gutter.innerHTML = html;
-    gutter.style.width = gutterWidth(lines) + 'px';
+    const lines = countLines(text);
+    renderGutter(gutter, lines);
 }
 
 /* ----------------------------------------------------------
@@ -587,31 +629,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Language switcher
     if (langSel) langSel.addEventListener('change', e => changeLang(e.target.value));
 
-    /* --- Input textarea: live stats + live auto-detect badge + line numbers --- */
+    /* --- Input textarea: live stats + auto-detect + line numbers --- */
     const inputEl = document.getElementById('input-text');
 
-    // Update line numbers and stats on every keystroke
+    // On every keystroke: update stats immediately, debounce the heavy gutter rebuild
     inputEl.addEventListener('input', e => {
         updateStats('input', e.target.value);
-        updateInputLineNumbers();
+        updateInputLineNumbersDebounced();   // debounced — won't freeze on rapid typing
         if (document.getElementById('format-selector').value === 'auto') {
-            const det = detectFormat(e.target.value);
-            updateFormatBadge(det);
+            updateFormatBadge(detectFormat(e.target.value));
         }
+    });
+
+    // Paste event: large pastes can be slow. Defer gutter + stats to next frame
+    // so the browser can finish inserting the text before we scan it.
+    inputEl.addEventListener('paste', () => {
+        requestAnimationFrame(() => {
+            updateStats('input', inputEl.value);
+            updateInputLineNumbersDebounced();
+        });
     });
 
     // Sync gutter scroll when textarea scrolls vertically
     inputEl.addEventListener('scroll', syncInputGutterScroll);
 
-    // Update active-line highlight on cursor move (click / arrow keys)
-    inputEl.addEventListener('click', () => {
+    // Active-line highlight on cursor movement (click / arrow keys)
+    const updateActive = () => {
         const g = document.getElementById('input-line-numbers');
-        if (g) highlightActiveLine(inputEl, g);
-    });
-    inputEl.addEventListener('keyup', () => {
-        const g = document.getElementById('input-line-numbers');
-        if (g) highlightActiveLine(inputEl, g);
-    });
+        const lines = countLines(inputEl.value);
+        if (g && lines <= GUTTER_FAST_THRESHOLD) highlightActiveLine(inputEl, g);
+    };
+    inputEl.addEventListener('click',  updateActive);
+    inputEl.addEventListener('keyup',  updateActive);
 
     // Initialise gutter with line 1
     updateInputLineNumbers();
