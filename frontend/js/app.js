@@ -374,7 +374,65 @@ function minify() {
 }
 
 /* ----------------------------------------------------------
-   7. OUTPUT RENDERING
+   7. LINE NUMBERS GUTTER  (Notepad++ style)
+   ---------------------------------------------------------- */
+
+// Minimum gutter width based on digit count, keeping numbers readable
+function gutterWidth(lineCount) {
+    const digits = String(lineCount).length;
+    return Math.max(46, digits * 9 + 28);  // 46 px floor, ~9px per extra digit
+}
+
+// Rebuild the gutter spans for the input textarea.
+// Called on every keystroke — kept fast by operating on a string, not the DOM per-line.
+function updateInputLineNumbers() {
+    const ta    = document.getElementById('input-text');
+    const gutter = document.getElementById('input-line-numbers');
+    if (!gutter) return;
+
+    const lines = ta.value.split('\n').length;
+    let html = '';
+    for (let i = 1; i <= lines; i++) html += `<span>${i}</span>`;
+    gutter.innerHTML = html;
+
+    // Widen gutter when line count crosses a digit boundary
+    gutter.style.width = gutterWidth(lines) + 'px';
+
+    // Highlight the line where the cursor sits
+    highlightActiveLine(ta, gutter);
+}
+
+// Sync gutter scroll position to textarea scroll — called on textarea 'scroll'
+function syncInputGutterScroll() {
+    const ta     = document.getElementById('input-text');
+    const gutter = document.getElementById('input-line-numbers');
+    if (gutter) gutter.scrollTop = ta.scrollTop;
+}
+
+// Mark the gutter span for the line under the cursor
+function highlightActiveLine(ta, gutter) {
+    const activeLine = ta.value.substring(0, ta.selectionStart).split('\n').length;
+    const spans = gutter.querySelectorAll('span');
+    spans.forEach((s, i) => {
+        s.classList.toggle('active', i + 1 === activeLine);
+    });
+}
+
+// Rebuild the output gutter after each format operation.
+// The output is a <pre><code> block — line count comes from the text content.
+function updateOutputLineNumbers(text) {
+    const gutter = document.getElementById('output-line-numbers');
+    if (!gutter) return;
+
+    const lines = text ? text.split('\n').length : 1;
+    let html = '';
+    for (let i = 1; i <= lines; i++) html += `<span>${i}</span>`;
+    gutter.innerHTML = html;
+    gutter.style.width = gutterWidth(lines) + 'px';
+}
+
+/* ----------------------------------------------------------
+   8. OUTPUT RENDERING
    ---------------------------------------------------------- */
 
 // Write code to the output panel and apply syntax highlighting
@@ -388,6 +446,7 @@ function displayOutput(text, lang) {
         try { hljs.highlightElement(codeEl); } catch (_) { /* ignore */ }
     }
 
+    updateOutputLineNumbers(text);
     updateStats('output', text);
 }
 
@@ -475,7 +534,7 @@ function swapPanels() {
     inputEl.focus();
 }
 
-// Clear both panels
+// Clear both panels and reset both gutters to line 1
 function clearAll() {
     document.getElementById('input-text').value  = '';
     document.getElementById('output-code').textContent = '';
@@ -486,6 +545,9 @@ function clearAll() {
     document.getElementById('format-detected').textContent = '';
     document.getElementById('status-bar').textContent = '';
     document.getElementById('status-bar').className   = 'status-bar';
+    // Reset both gutters to a single "1" line
+    updateInputLineNumbers();
+    updateOutputLineNumbers('');
     document.getElementById('input-text').focus();
 }
 
@@ -525,15 +587,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Language switcher
     if (langSel) langSel.addEventListener('change', e => changeLang(e.target.value));
 
-    /* --- Input textarea: live stats + live auto-detect badge --- */
+    /* --- Input textarea: live stats + live auto-detect badge + line numbers --- */
     const inputEl = document.getElementById('input-text');
+
+    // Update line numbers and stats on every keystroke
     inputEl.addEventListener('input', e => {
         updateStats('input', e.target.value);
+        updateInputLineNumbers();
         if (document.getElementById('format-selector').value === 'auto') {
             const det = detectFormat(e.target.value);
             updateFormatBadge(det);
         }
     });
+
+    // Sync gutter scroll when textarea scrolls vertically
+    inputEl.addEventListener('scroll', syncInputGutterScroll);
+
+    // Update active-line highlight on cursor move (click / arrow keys)
+    inputEl.addEventListener('click', () => {
+        const g = document.getElementById('input-line-numbers');
+        if (g) highlightActiveLine(inputEl, g);
+    });
+    inputEl.addEventListener('keyup', () => {
+        const g = document.getElementById('input-line-numbers');
+        if (g) highlightActiveLine(inputEl, g);
+    });
+
+    // Initialise gutter with line 1
+    updateInputLineNumbers();
 
     // Keyboard shortcuts
     inputEl.addEventListener('keydown', e => {

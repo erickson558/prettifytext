@@ -6,6 +6,17 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.1] — 2026-06-06
+
+### Added
+- Line-number gutter on both input and output panels (Notepad++ style)
+- Active-line highlight in input gutter follows cursor position
+- Gutter auto-widens when line count crosses digit boundaries (9→99→999…)
+- Horizontal scroll in output keeps gutter sticky (position: sticky left)
+- Input gutter scroll synchronized to textarea vertical scroll
+
+---
+
 ## [1.0.0] — 2026-06-06
 
 ### Added

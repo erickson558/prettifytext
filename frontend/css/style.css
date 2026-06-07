@@ -243,12 +243,57 @@ body {
 }
 
 /* ----------------------------------------------------------
-   7. INPUT TEXTAREA
+   7. EDITOR AREA — shared wrapper for gutter + content
+   ---------------------------------------------------------- */
+
+/* Flex row: [line-numbers gutter | textarea or pre] */
+.editor-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;   /* scroll is managed by children individually */
+    min-height: 440px;
+}
+
+/* ----------------------------------------------------------
+   Line-numbers gutter (Notepad++ style)
+   Must share the same font metrics as the editor so lines align.
+   ---------------------------------------------------------- */
+.line-numbers {
+    flex-shrink: 0;
+    width: 46px;          /* widens automatically via JS for >999 lines */
+    padding: .85rem .4rem .85rem 0;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: .82rem;
+    line-height: 1.65;
+    text-align: right;
+    overflow: hidden;     /* scrolling synced via JS, not native */
+    user-select: none;
+    cursor: default;
+    transition: width .1s;
+}
+
+.line-numbers span {
+    display: block;
+    padding-right: .45rem;
+    /* Highlight the line under cursor — toggled via JS */
+}
+
+/* Active-line highlight in gutter */
+.line-numbers span.active {
+    color: var(--text-primary);
+    background: rgba(99,102,241,.12);
+    border-radius: 2px;
+}
+
+/* ----------------------------------------------------------
+   8. INPUT TEXTAREA
    ---------------------------------------------------------- */
 #input-text {
     flex: 1;
     width: 100%;
-    min-height: 440px;
     background: transparent;
     border: none;
     outline: none;
@@ -260,20 +305,31 @@ body {
     line-height: 1.65;
     tab-size: 2;
     caret-color: var(--primary);
+    overflow-y: auto;   /* textarea handles its own scroll; gutter syncs to it */
 }
 #input-text::placeholder { color: var(--text-muted); font-style: italic; }
 
 /* ----------------------------------------------------------
-   8. OUTPUT / HIGHLIGHT DISPLAY
+   9. OUTPUT / HIGHLIGHT DISPLAY
    ---------------------------------------------------------- */
 .output-scroll {
     flex: 1;
     overflow: auto;
-    min-height: 440px;
+}
+/* editor-area inside output-scroll fills the scrollable area */
+.output-scroll .editor-area {
+    min-width: max-content;  /* let long lines scroll horizontally */
+    min-height: 100%;
+}
+/* output gutter scrolls with the container, not independently */
+.output-scroll .line-numbers {
+    position: sticky;
+    left: 0;            /* gutter stays visible on horizontal scroll */
+    z-index: 1;
 }
 .output-scroll pre {
     margin: 0;
-    min-height: 100%;
+    flex: 1;
 }
 .output-scroll pre code {
     display: block;

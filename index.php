@@ -111,12 +111,16 @@ $year    = date('Y');
                 <span class="panel-title" data-i18n="input">Input</span>
             </div>
             <div class="panel-body">
-                <textarea
-                    id="input-text"
-                    spellcheck="false"
-                    data-i18n-placeholder="placeholder"
-                    placeholder="Paste your code here…  (Ctrl+Enter to format)"
-                ></textarea>
+                <div class="editor-area">
+                    <!-- Line number gutter — synced to textarea scroll via JS -->
+                    <div class="line-numbers" id="input-line-numbers" aria-hidden="true"><span>1</span></div>
+                    <textarea
+                        id="input-text"
+                        spellcheck="false"
+                        data-i18n-placeholder="placeholder"
+                        placeholder="Paste your code here…  (Ctrl+Enter to format)"
+                    ></textarea>
+                </div>
             </div>
             <div class="panel-footer">
                 <span id="input-stats">0 chars | 0 lines</span>
@@ -142,7 +146,11 @@ $year    = date('Y');
             </div>
             <div class="panel-body">
                 <div class="output-scroll">
-                    <pre><code id="output-code" class="plaintext"></code></pre>
+                    <div class="editor-area">
+                        <!-- Line number gutter for output — updated after each format -->
+                        <div class="line-numbers" id="output-line-numbers" aria-hidden="true"><span>1</span></div>
+                        <pre><code id="output-code" class="plaintext"></code></pre>
+                    </div>
                 </div>
             </div>
             <div class="panel-footer">
