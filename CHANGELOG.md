@@ -6,6 +6,18 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.3] — 2026-06-06
+
+### Fixed
+- **Center buttons permanently fixed** — changed grid column definition from `1fr` to
+  `minmax(0, 1fr)` for both panel columns. With plain `1fr` the browser still uses the
+  content's min-content width as the track floor, so pasting wide text expanded the input
+  panel and pushed the buttons column off-screen. `minmax(0, 1fr)` hard-sets the minimum
+  track size to 0, making the panels truly contained regardless of their content width.
+- Added `min-width: 0` explicitly to `.panel` as belt-and-suspenders for flex contexts.
+
+---
+
 ## [1.0.2] — 2026-06-06
 
 ### Fixed

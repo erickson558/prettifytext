@@ -186,10 +186,13 @@ body {
 }
 .toolbar-left { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
 
-/* Three-column grid: input | actions | output */
+/* Three-column grid: input | actions | output
+   minmax(0, 1fr) is the definitive fix: sets the track minimum to 0,
+   preventing panel content from ever pushing the column wider than its fraction.
+   Plain "1fr" still respects content min-width, which is the root cause of buttons disappearing. */
 .editor-grid {
     display: grid;
-    grid-template-columns: 1fr 110px 1fr;
+    grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr);
     gap: 1rem;
     flex: 1;
     min-height: 480px;
@@ -205,6 +208,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-width: 0;    /* belt-and-suspenders: explicit 0 for flex/grid contexts */
     box-shadow: 0 2px 16px var(--shadow);
     transition: box-shadow .2s;
 }
