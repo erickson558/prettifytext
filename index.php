@@ -102,7 +102,18 @@ $year    = date('Y');
         <div id="status-bar" class="status-bar" role="status" aria-live="polite"></div>
     </div>
 
-    <!-- Two-panel editor grid -->
+    <!-- ===== ACTION BAR — TOP (above both panels) ===== -->
+    <div class="actions-bar" id="actions-top">
+        <button class="btn btn-primary  action-btn" data-action="prettify" data-i18n="prettify">▶ Prettify</button>
+        <button class="btn btn-secondary action-btn" data-action="minify"   data-i18n="minify">⊟ Minify</button>
+        <span class="actions-sep"></span>
+        <button class="btn btn-secondary action-btn" data-action="swap"     data-i18n="swap">⇄ Swap</button>
+        <button class="btn btn-secondary action-btn" data-action="clear"    data-i18n="clear">✕ Clear</button>
+        <span class="actions-sep"></span>
+        <button class="btn btn-secondary action-btn" data-action="copy"     data-i18n="copy">Copy</button>
+    </div>
+
+    <!-- ===== TWO-PANEL EDITOR GRID (input | output) ===== -->
     <div class="editor-grid">
 
         <!-- ---- INPUT PANEL ---- -->
@@ -127,21 +138,14 @@ $year    = date('Y');
             </div>
         </div>
 
-        <!-- ---- ACTIONS COLUMN ---- -->
-        <div class="actions-column">
-            <button id="btn-prettify" class="btn btn-primary"  data-i18n="prettify">▶ Prettify</button>
-            <button id="btn-minify"   class="btn btn-secondary" data-i18n="minify">⊟ Minify</button>
-            <button id="btn-swap"     class="btn btn-secondary" data-i18n="swap">⇄ Swap</button>
-            <button id="btn-clear"    class="btn btn-secondary" data-i18n="clear">✕ Clear</button>
-        </div>
-
         <!-- ---- OUTPUT PANEL ---- -->
         <div class="panel output-panel">
             <div class="panel-header">
                 <span class="panel-title" data-i18n="output">Output</span>
                 <div style="display:flex;gap:.5rem;align-items:center">
                     <span id="format-detected" class="format-badge"></span>
-                    <button id="btn-copy" class="btn-icon" data-i18n="copy">Copy</button>
+                    <!-- Copy button kept in header for quick access -->
+                    <button class="btn-icon action-btn" data-action="copy" data-i18n="copy">Copy</button>
                 </div>
             </div>
             <div class="panel-body">
@@ -159,6 +163,18 @@ $year    = date('Y');
         </div>
 
     </div><!-- /.editor-grid -->
+
+    <!-- ===== ACTION BAR — BOTTOM (below both panels, duplicate of top) ===== -->
+    <div class="actions-bar" id="actions-bottom">
+        <button class="btn btn-primary  action-btn" data-action="prettify" data-i18n="prettify">▶ Prettify</button>
+        <button class="btn btn-secondary action-btn" data-action="minify"   data-i18n="minify">⊟ Minify</button>
+        <span class="actions-sep"></span>
+        <button class="btn btn-secondary action-btn" data-action="swap"     data-i18n="swap">⇄ Swap</button>
+        <button class="btn btn-secondary action-btn" data-action="clear"    data-i18n="clear">✕ Clear</button>
+        <span class="actions-sep"></span>
+        <button class="btn btn-secondary action-btn" data-action="copy"     data-i18n="copy">Copy</button>
+    </div>
+
 </div><!-- /.editor-wrapper -->
 
 <!-- ===================== ABOUT MODAL ===================== -->

@@ -6,6 +6,20 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.4] — 2026-06-08
+
+### Changed
+- Action buttons (Prettify / Minify / Swap / Clear / Copy) moved out of the grid
+  into a **horizontal bar fixed above the editor panels** — they no longer scroll
+  or shift position when content is tall.
+- A **duplicate action bar is shown below the panels** for convenience with long files.
+- Grid simplified from 3 columns (input | buttons | output) to 2 columns (input | output).
+- All action buttons now use `data-action` attributes; a single querySelectorAll handler
+  wires both bars and the output-panel header Copy button automatically.
+- Copy button kept in the output panel header as a quick-access shortcut.
+
+---
+
 ## [1.0.3] — 2026-06-06
 
 ### Fixed

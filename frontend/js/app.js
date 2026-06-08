@@ -611,12 +611,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const langSel = document.getElementById('lang-switcher');
     if (langSel) langSel.value = currentLang;
 
-    /* --- Button click handlers --- */
-    document.getElementById('btn-prettify').addEventListener('click', prettify);
-    document.getElementById('btn-minify').addEventListener('click', minify);
-    document.getElementById('btn-swap').addEventListener('click', swapPanels);
-    document.getElementById('btn-clear').addEventListener('click', clearAll);
-    document.getElementById('btn-copy').addEventListener('click', copyOutput);
+    /* --- Action buttons — top bar, bottom bar, and output header copy.
+           All use data-action so both bars and the header copy are handled here. --- */
+    const ACTION_MAP = {
+        prettify: prettify,
+        minify:   minify,
+        swap:     swapPanels,
+        clear:    clearAll,
+        copy:     copyOutput,
+    };
+    document.querySelectorAll('.action-btn[data-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const fn = ACTION_MAP[btn.dataset.action];
+            if (fn) fn();
+        });
+    });
+
+    /* --- Header controls --- */
     document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
     document.getElementById('btn-about').addEventListener('click', openAbout);
     document.getElementById('close-modal').addEventListener('click', closeAbout);

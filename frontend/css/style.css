@@ -186,13 +186,12 @@ body {
 }
 .toolbar-left { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
 
-/* Three-column grid: input | actions | output
-   minmax(0, 1fr) is the definitive fix: sets the track minimum to 0,
-   preventing panel content from ever pushing the column wider than its fraction.
-   Plain "1fr" still respects content min-width, which is the root cause of buttons disappearing. */
+/* Two-column grid: input | output — action buttons are now in bars above/below.
+   minmax(0,1fr) hard-sets the minimum track size to 0, preventing any content
+   from expanding the column and breaking the layout. */
 .editor-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 1rem;
     flex: 1;
     min-height: 480px;
@@ -357,15 +356,27 @@ body {
 .hljs { background: transparent !important; }
 
 /* ----------------------------------------------------------
-   9. ACTIONS COLUMN (center between panels)
+   9. ACTIONS BAR — horizontal bar above and below the editor panels
    ---------------------------------------------------------- */
-.actions-column {
+.actions-bar {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: stretch;
-    gap: .6rem;
-    padding: .5rem 0;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    padding: .4rem .5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+/* Vertical divider between button groups */
+.actions-sep {
+    display: block;
+    width: 1px;
+    height: 22px;
+    background: var(--border);
+    flex-shrink: 0;
+    margin: 0 .1rem;
 }
 
 /* ----------------------------------------------------------
@@ -595,17 +606,12 @@ select optgroup { color: var(--text-muted); font-size: .72rem; }
    17. RESPONSIVE — tablets & phones
    ---------------------------------------------------------- */
 @media (max-width: 920px) {
+    /* Stack panels vertically on narrow screens */
     .editor-grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
     }
-    .actions-column {
-        flex-direction: row;
-        justify-content: center;
-        flex-wrap: wrap;
-        padding: 0;
-    }
-    .actions-column .btn { width: auto; flex: 1; min-width: 90px; }
+    /* Actions bars wrap naturally; Prettify stays prominent */
+    .actions-bar .btn { flex: 1; min-width: 80px; }
     #input-text, .output-scroll { min-height: 260px; }
     .hero h1 { font-size: 1.6rem; }
 }
