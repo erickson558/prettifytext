@@ -427,11 +427,15 @@ function renderGutter(gutter, lineCount) {
     gutter.innerHTML = html;
 }
 
-// Count lines safely — avoid splitting huge strings unnecessarily.
+// Count lines without creating an array — indexOf loop is O(n) but allocates nothing.
+// split('\n') builds an array of every line in memory; for 50 000 lines that's 50 000
+// string objects. indexOf avoids that entirely.
 function countLines(text) {
     if (!text) return 1;
-    if (text.length > 2_000_000) return GUTTER_LINE_CAP + 1; // cap early
-    return text.split('\n').length;
+    if (text.length > 2_000_000) return GUTTER_LINE_CAP + 1; // bail early for huge files
+    let n = 1, pos = 0;
+    while ((pos = text.indexOf('\n', pos)) !== -1) { n++; pos++; }
+    return n;
 }
 
 // Rebuild the input gutter — debounced to avoid freezing on rapid paste / typing.
@@ -447,8 +451,10 @@ function updateInputLineNumbers() {
     if (lines <= GUTTER_FAST_THRESHOLD) highlightActiveLine(ta, gutter);
 }
 
-// Debounced version used on 'input' events (typing / pasting)
-const updateInputLineNumbersDebounced = debounce(updateInputLineNumbers, 120);
+// Two debounce windows: fast for regular typing, slow for paste.
+// Paste delivers potentially millions of chars at once; give the browser more breathing room.
+const updateInputLineNumbersDebounced      = debounce(updateInputLineNumbers, 150);
+const updateInputLineNumbersDebouncedSlow  = debounce(updateInputLineNumbers, 400);
 
 // Sync gutter scroll position to textarea scroll
 function syncInputGutterScroll() {
@@ -457,9 +463,12 @@ function syncInputGutterScroll() {
     if (gutter) gutter.scrollTop = ta.scrollTop;
 }
 
-// Mark the active-line span (only in rich span mode)
+// Mark the active-line span (only in rich span mode).
+// Uses indexOf loop instead of split to avoid allocating an array just to count newlines.
 function highlightActiveLine(ta, gutter) {
-    const activeLine = ta.value.substring(0, ta.selectionStart).split('\n').length;
+    const limit = ta.selectionStart;
+    let activeLine = 1, pos = 0;
+    while ((pos = ta.value.indexOf('\n', pos)) !== -1 && pos < limit) { activeLine++; pos++; }
     gutter.querySelectorAll('span').forEach((s, i) => {
         s.classList.toggle('active', i + 1 === activeLine);
     });
@@ -508,12 +517,23 @@ function rehighlight() {
    8. UI HELPERS
    ---------------------------------------------------------- */
 
-// Show char / line count in a panel footer
+// Show char / line count in a panel footer.
+// indexOf loop avoids the array allocation that text.split('\n') creates.
+// For files > 1 MB the line count is skipped (shown as "?") — scanning 1M chars
+// synchronously on the main thread causes noticeable lag.
 function updateStats(panel, text) {
     const el = document.getElementById(`${panel}-stats`);
     if (!el) return;
-    const chars = text.length.toLocaleString();
-    const lines = text.split('\n').length.toLocaleString();
+    const len = text.length;
+    const chars = len.toLocaleString();
+    let lines;
+    if (len > 1_000_000) {
+        lines = '?'; // too large to count without lagging
+    } else {
+        let n = 1, pos = 0;
+        while ((pos = text.indexOf('\n', pos)) !== -1) { n++; pos++; }
+        lines = n.toLocaleString();
+    }
     el.textContent = `${chars} ${t('chars')} | ${lines} ${t('lines')}`;
 }
 
@@ -643,21 +663,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     /* --- Input textarea: live stats + auto-detect + line numbers --- */
     const inputEl = document.getElementById('input-text');
 
-    // On every keystroke: update stats immediately, debounce the heavy gutter rebuild
+    // Flag set during paste so the 'input' event (which also fires on paste) can skip
+    // all heavy synchronous work — the paste handler's rAF callback will do it instead.
+    let isPasting = false;
+
+    // 'input' event fires on every character typed AND after paste.
+    // When pasting, skip all work here — the paste handler below owns that update.
     inputEl.addEventListener('input', e => {
+        if (isPasting) return;
         updateStats('input', e.target.value);
-        updateInputLineNumbersDebounced();   // debounced — won't freeze on rapid typing
-        if (document.getElementById('format-selector').value === 'auto') {
+        updateInputLineNumbersDebounced();
+        // Skip auto-detect for large inputs — running multiple regexes on 1 MB lags
+        if (document.getElementById('format-selector').value === 'auto' &&
+            e.target.value.length < 200_000) {
             updateFormatBadge(detectFormat(e.target.value));
         }
     });
 
-    // Paste event: large pastes can be slow. Defer gutter + stats to next frame
-    // so the browser can finish inserting the text before we scan it.
+    // Paste: block the 'input' handler, defer ALL heavy work to after the browser
+    // has finished inserting the text (requestAnimationFrame fires post-paint).
     inputEl.addEventListener('paste', () => {
+        isPasting = true;
         requestAnimationFrame(() => {
+            isPasting = false;
             updateStats('input', inputEl.value);
-            updateInputLineNumbersDebounced();
+            updateInputLineNumbersDebouncedSlow(); // longer debounce for paste
+            if (document.getElementById('format-selector').value === 'auto' &&
+                inputEl.value.length < 200_000) {
+                updateFormatBadge(detectFormat(inputEl.value));
+            }
         });
     });
 

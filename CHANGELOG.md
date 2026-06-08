@@ -6,6 +6,23 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.5] — 2026-06-08
+
+### Performance
+- **No more lag on paste** — `isPasting` flag blocks the `input` event from doing any
+  work while paste is in progress; all updates are deferred to `requestAnimationFrame`.
+- **`countLines()`** rewritten: `indexOf` loop instead of `text.split('\n')`. Avoids
+  allocating an array of every line in memory (50 000-line file = 50 000 objects freed).
+- **`updateStats()`** rewritten: same `indexOf` loop. For files > 1 MB the line count
+  shows "?" — scanning that synchronously on the main thread causes visible freezes.
+- **`highlightActiveLine()`** rewritten: `indexOf` loop up to `selectionStart` only,
+  avoiding a `substring()` allocation + `split()` for every cursor move.
+- Paste uses a 400 ms debounce for the gutter (vs 150 ms for typing) to give large
+  pastes more breathing room before triggering the DOM rebuild.
+- Auto-format detection skipped for inputs > 200 KB (multiple regex on 1 MB = lag).
+
+---
+
 ## [1.0.4] — 2026-06-08
 
 ### Changed
